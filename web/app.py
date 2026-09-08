@@ -9,9 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from web.api.data import router as data_router
-from web.api.models import router as models_router
-from web.api.anomalies import router as anomalies_router
+from api.data import router as data_router
+from api.models import router as models_router
+from api.anomalies import router as anomalies_router
 
 app = FastAPI(
     title="地震流体异常检测可视化平台",
@@ -66,4 +66,4 @@ if __name__ == "__main__":
     print("  地震流体异常检测可视化平台")
     print("  访问地址: http://localhost:8000")
     print("=" * 50)
-    uvicorn.run("web.app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)

@@ -4,10 +4,10 @@ let currentWindow = 60;
 let currentVar = 'radon';
 const MODEL_COLORS = {
     naive: '#999999',
-    rf: '#7eb3e8',      // 浅蓝
+    rf: '#b0b0b0',      // 恢复为原来的灰色
     lstm: '#91cc75',
-    lstm_rf: '#fdd663',  // 浅黄
-    cnn_lstm: '#f4a7a7', // 浅红
+    lstm_rf: '#fde88a',  // 浅黄
+    cnn_lstm: '#d46060', // 深红
 };
 
 const MODEL_NAMES = {
@@ -97,8 +97,8 @@ function renderPredictionChart(data, selectedModels) {
             type: 'line',
             data: data.dates.map((d, i) => [d, data.y_true[i]]),
             symbol: 'none',
-            lineStyle: { width: 2, color: '#333' },
-            itemStyle: { color: '#333' },
+            lineStyle: { width: 2, color: '#8ab4e8' },
+            itemStyle: { color: '#8ab4e8' },
             z: 10,
         }
     ];
