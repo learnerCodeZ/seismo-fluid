@@ -65,3 +65,59 @@ def remove_annual_cycle(dates, values: np.ndarray,
     s = pd.Series(clim).interpolate(limit_direction="both")
     clim = s.to_numpy()[doy]  # clim[1..366] 按年积日取值
     return v - clim
+
+
+def rolling_stats(values: np.ndarray, window: int) -> np.ndarray:
+    """滑动均值与标准差。返回 [T, 2]，前 window-1 行为 NaN。"""
+    s = pd.Series(np.asarray(values, dtype=float))
+    mean = s.rolling(window, min_periods=1).mean().to_numpy()
+    std = s.rolling(window, min_periods=1).std().fillna(0).to_numpy()
+    return np.column_stack([mean, std])
+
+
+def diff_features(values: np.ndarray) -> np.ndarray:
+    """一阶差分（日变化）与二阶差分（加速度）。返回 [T, 2]，首行/前两行补 0。"""
+    v = np.asarray(values, dtype=float)
+    d1 = np.diff(v, prepend=v[0])
+    d2 = np.diff(d1, prepend=d1[0])
+    return np.column_stack([d1, d2])
+
+
+def build_feature_matrix(values: np.ndarray, *, use_roll: bool = True,
+                         roll_windows: tuple[int, ...] = (7, 14, 30),
+                         use_diff: bool = True) -> tuple[np.ndarray, list[str]]:
+    """把单变量序列扩成多通道特征矩阵。
+
+    列顺序：raw, [roll_mean_w, roll_std_w]*, [d1, d2]
+    特征只依赖过去值（rolling/diff 均向后看），与滑窗目标对齐后无未来泄漏。
+    返回 (X [T, n_feat], names)。
+    """
+    v = np.asarray(values, dtype=float)
+    cols = [v]
+    names = ["raw"]
+    if use_roll:
+        for w in roll_windows:
+            rs = rolling_stats(v, w)
+            cols.extend([rs[:, 0], rs[:, 1]])
+            names.extend([f"roll_mean_{w}", f"roll_std_{w}"])
+    if use_diff:
+        df = diff_features(v)
+        cols.extend([df[:, 0], df[:, 1]])
+        names.extend(["diff1", "diff2"])
+    return np.column_stack(cols), names
+
+
+def robust_fit(train: np.ndarray) -> tuple[float, float]:
+    """RobustScaler：中位数 + IQR。对离群值比 z-score 稳。"""
+    v = np.asarray(train, dtype=float)
+    v = v[~np.isnan(v)]
+    med = float(np.median(v))
+    q75, q25 = np.percentile(v, [75, 25])
+    iqr = float(q75 - q25)
+    scale = iqr if iqr > 1e-12 else float(np.std(v) or 1.0)
+    scale = scale if scale > 1e-12 else 1.0
+    return med, scale
+
+
+def robust_apply(x: np.ndarray, med: float, scale: float) -> np.ndarray:
+    return (np.asarray(x, dtype=float) - med) / scale

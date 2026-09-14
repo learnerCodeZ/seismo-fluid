@@ -19,13 +19,16 @@ class CNNLSTM(nn.Module):
                  conv_channels=(64, 32), lstm_hidden: int = 64,
                  dropout: float = 0.3):
         super().__init__()
-        c1, c2 = conv_channels
-        self.conv = nn.Sequential(
-            nn.Conv1d(n_vars, c1, kernel_size=3, padding=1), nn.ReLU(),
-            nn.MaxPool1d(2),
-            nn.Conv1d(c1, c2, kernel_size=3, padding=1), nn.ReLU(),
-        )
-        self.lstm = nn.LSTM(c2, lstm_hidden, batch_first=True)
+        layers = []
+        in_ch = n_vars
+        for out_ch in conv_channels:
+            layers.extend([
+                nn.Conv1d(in_ch, out_ch, kernel_size=3, padding=1), nn.ReLU(),
+                nn.MaxPool1d(2),
+            ])
+            in_ch = out_ch
+        self.conv = nn.Sequential(*layers)
+        self.lstm = nn.LSTM(in_ch, lstm_hidden, batch_first=True)
         self.head = nn.Sequential(nn.Dropout(dropout),
                                   nn.Linear(lstm_hidden, 32), nn.ReLU(),
                                   nn.Linear(32, 1))
@@ -53,13 +56,24 @@ class _WindowDataset(torch.utils.data.Dataset):
 def train_torch(model: nn.Module, X_tr: np.ndarray, y_tr: np.ndarray,
                 X_val: np.ndarray, y_val: np.ndarray, epochs: int = 200,
                 batch_size: int = 64, lr: float = 1e-3, patience: int = 10,
-                seed: int = 42, verbose: bool = False) -> dict:
-    """通用训练循环（CNN-LSTM 与 LSTM 基线共用）。返回含 best_val_loss 的历史。"""
+                seed: int = 42, verbose: bool = False,
+                loss: str = "mse", scheduler: str | None = None) -> dict:
+    """通用训练循环（CNN-LSTM 与 LSTM 基线共用）。
+
+    loss: "mse" | "huber" | "smooth_l1"
+    scheduler: None | "cosine"
+    """
     torch.manual_seed(seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
-    loss_fn = nn.MSELoss()
+    if loss == "huber":
+        loss_fn = nn.HuberLoss(delta=1.0)
+    elif loss == "smooth_l1":
+        loss_fn = nn.SmoothL1Loss()
+    else:
+        loss_fn = nn.MSELoss()
+    sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(epochs, 1)) if scheduler == "cosine" else None
     tr_loader = torch.utils.data.DataLoader(_WindowDataset(X_tr, y_tr),
                                             batch_size=batch_size, shuffle=True)
     best_val, best_state, wait = np.inf, None, 0
@@ -72,6 +86,8 @@ def train_torch(model: nn.Module, X_tr: np.ndarray, y_tr: np.ndarray,
             loss = loss_fn(model(xb), yb)
             loss.backward()
             opt.step()
+        if sch is not None:
+            sch.step()
         model.eval()
         with torch.no_grad():
             val_loss = float(loss_fn(model(torch.tensor(X_val, dtype=torch.float32,
