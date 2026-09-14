@@ -1,9 +1,15 @@
-# 解释器: D:\桌面\地质\大创\dataAnalysis\.venv\Scripts\python.exe  (Python 3.14.5)
-# 本文件记录当前环境已验证的版本；重建环境: pip install -r requirements.txt
-# 注意: Python 3.14 下无 pyarrow/pyyaml 发行版，项目约定 CSV + JSON 替代。
-torch==2.13.0+cpu      # CPU 版即满足本项目规模；如需 GPU 版另行安装
+# 解释器：任意 CPython 3.11+（本项目在 Python 3.14.5 上验证）
+# 安装: python -m pip install -r requirements.txt
+# 注意: 本项目约定不用 pyarrow / PyYAML；产物为 CSV + JSON
+
+# —— 建模核心 ——
+torch==2.13.0+cpu
 numpy==2.5.1
 pandas==3.0.3
 scikit-learn==1.9.0
 matplotlib==3.11.0
 openpyxl==3.1.5
+
+# —— Web 可视化（web/app.py）——
+fastapi>=0.110
+uvicorn>=0.27

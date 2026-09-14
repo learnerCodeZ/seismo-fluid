@@ -23,7 +23,12 @@ data/raw/
 data/external/
 
 # Results (too large, regenerate with scripts)
-results/
+# keep the index README for collaborators
+results/*
+!results/README.md
+
+# Handoff packages (scripts/package_handoff.ps1)
+handoff/
 
 # Models
 *.h5

@@ -1,0 +1,16 @@
+{
+  "data_root": "CHANGE_ME/absolute/path/to/data-root",
+  "project_root": "CHANGE_ME/absolute/path/to/dachuang_cnn_lstm",
+  "external": {
+    "oridata_dir": "OriData",
+    "oridata2_dir": "OriData2",
+    "oridata3_dir": "OriData3",
+    "station_meta": "OriData/B区域_云南省.xlsx",
+    "papers_dir": "Papers"
+  },
+  "internal": {
+    "clean_dir": "data/clean",
+    "results_dir": "results",
+    "figures_dir": "figures"
+  }
+}
