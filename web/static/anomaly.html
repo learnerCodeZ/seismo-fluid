@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>异常检测结果 - 地震流体异常检测</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>异常检测结果 - 地震流体异常检测 v6.1</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=611">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
@@ -14,40 +14,44 @@
             <a href="/">数据概览</a>
             <a href="/prediction">模型预测</a>
             <a href="/anomaly" class="active">异常检测</a>
+            <a href="/earthquake">震例验证</a>
         </div>
     </nav>
 
     <main class="container">
-        <!-- 概览卡片 -->
         <section class="stats-card">
             <div class="stat-item">
                 <span class="stat-label">检出异常事件</span>
                 <span class="stat-value" id="stat-events">-</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">已验证事件</span>
+                <span class="stat-label">后续有 M4+ 地震</span>
                 <span class="stat-value" id="stat-verified">-</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">对应M4+地震</span>
+                <span class="stat-label">对应 M4+ 地震</span>
                 <span class="stat-value" id="stat-m4">-</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">对应M5+地震</span>
+                <span class="stat-label">对应 M5+ 地震</span>
                 <span class="stat-value" id="stat-m5">-</span>
             </div>
         </section>
 
-        <!-- 异常得分时序 -->
         <section class="chart-section">
-            <h3>CNN-LSTM 残差异常得分</h3>
+            <p class="section-desc" id="model-desc">加载中…</p>
+        </section>
+
+        <section class="chart-section">
+            <h3>E_cosine 残差 LOF 得分</h3>
             <div id="scores-chart" style="height: 400px;"></div>
         </section>
 
-        <!-- 异常事件详情表 -->
         <section class="chart-section">
             <h3>异常事件综合判定表</h3>
-            <p class="section-desc">三道关卡：① 非气象归因 → ② 震前窗口有地震 → ③ 最终判定</p>
+            <p class="section-desc">
+                气象归因（降水&gt;10mm）→ 震后 90 天目录检索（M≥4.0）→ 综合判定
+            </p>
             <div class="table-container">
                 <table id="events-table">
                     <thead>
@@ -56,11 +60,10 @@
                             <th>异常时段</th>
                             <th>天数</th>
                             <th>峰值</th>
-                            <th>方向</th>
                             <th>降水量</th>
                             <th>归因</th>
-                            <th>M4+地震</th>
-                            <th>M5+地震</th>
+                            <th>M4+</th>
+                            <th>M5+</th>
                             <th>判定</th>
                         </tr>
                     </thead>
@@ -69,19 +72,17 @@
             </div>
         </section>
 
-        <!-- M5地震详情 -->
         <section class="chart-section">
-            <h3>对应M5+地震详情</h3>
+            <h3>对应 M5+ 地震详情</h3>
             <div id="earthquake-details"></div>
         </section>
 
-        <!-- 敏感性分析 -->
         <section class="chart-section">
-            <h3>敏感性分析 - 阈值分位数 vs 异常事件数</h3>
+            <h3>阈值敏感性 — 分位数 vs 异常点数</h3>
             <div id="sensitivity-chart" style="height: 300px;"></div>
         </section>
     </main>
 
-    <script src="/static/js/anomaly.js"></script>
+    <script src="/static/js/anomaly.js?v=611"></script>
 </body>
 </html>

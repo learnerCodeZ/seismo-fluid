@@ -1,162 +1,136 @@
 # Web 可视化平台
 
-基于 **FastAPI + ECharts** 的交互式可视化界面，用于展示项目各阶段的成果。
+> **当前数据口径：v6.1**（主模型 E_cosine ★，65/35 切分，测试段自 2022-05-16）
+
+基于 **FastAPI + ECharts** 的交互式界面，把 `data/` 与 `results/` 里的结果变成可点、可缩放的图表。
 
 ---
 
-## 一、这是什么
+## 端口与页面地址
 
-我们项目产出了很多数据和结果（csv、json），但直接看这些文件很不直观。这个 Web 平台把这些成果**变成可交互的图表**，方便：
+**固定端口：`8002`**（`localhost` 与 `127.0.0.1` 等价）
 
-- **调试**：快速查看数据是否正确、模型预测效果如何
-- **展示**：答辩时直接打开浏览器演示，比截图专业
-- **汇报**：发一个链接给老师，点开就能看
+| 页面 | 地址 | 数据源 |
+|------|------|--------|
+| 数据概览 | **http://127.0.0.1:8002/** | `data/clean/long.csv` |
+| 模型预测 | **http://127.0.0.1:8002/prediction** | `results/v61_compare`、`results/v61_optimize/E_cosine`；可切 v6.0 多变量 |
+| 异常检测 | **http://127.0.0.1:8002/anomaly** | `results/v61_anomaly/` |
+| 震例验证 | **http://127.0.0.1:8002/earthquake** | `results/v61_anomaly/` + 地震目录 |
+
+健康检查：`http://127.0.0.1:8002/health`
 
 ---
 
-## 二、和项目成果的联系
+## 如何启动
+
+### 方式一：一键脚本（推荐）
+
+双击：
 
 ```
-我们项目的成果（数据/模型/异常）
-         ↓ 读取
-    Web 后端 (FastAPI)
-         ↓ 返回 JSON
-    Web 前端 (ECharts 图表)
-         ↓
-      浏览器展示
+<项目根>\web\start_web.bat
 ```
 
-### 具体对应关系
+会自动检查依赖、启动服务，并打开震例验证页。
 
-| 我们的成果文件 | Web 展示什么 |
-|---------------|-------------|
-| `data/clean/long.csv` | 数据概览页的时序曲线（66034条记录，42个台站） |
-| `results/phase2_baselines/*/metrics.json` | 模型评估指标表（RMSE/MAE/MAPE/R²） |
-| `results/phase2_baselines/*/predictions_test.csv` | 预测对比图（观测值 vs 各模型预测值） |
-| `results/phase3_cnn_lstm/cnn_lstm/*` | CNN-LSTM 主模型的结果 |
-| `results/smoke/events.csv` | 异常事件列表（3个异常事件） |
-| `results/smoke/sensitivity_quantile.csv` | 敏感性分析柱状图 |
-
----
-
-## 三、如何使用
-
-### 第一步：启动服务
+### 方式二：命令行（可移植，推荐在新机器使用）
 
 ```bash
-# 进入 web 目录
-cd D:\MYCODE\dachuang_cnn_lstm\web
-
-# 启动服务器
-python app.py
+# 在项目根目录
+python -m pip install -r requirements.txt
+python web/app.py
+# 或
+python -m uvicorn web.app:app --host 127.0.0.1 --port 8002
 ```
 
-看到以下信息说明启动成功：
-```
-Uvicorn running on http://0.0.0.0:8000
-```
+停止服务：在运行窗口按 `Ctrl+C`。
 
-### 第二步：打开浏览器
-
-访问 **http://localhost:8000**
-
-### 第三步：浏览各页面
-
-#### 页面1：数据概览（主页）
-- 左上角选择**台站**（如：昆明基准地震台）
-- 选择**测项**（如：水位观测）
-- 下方显示该台站的时序曲线
-- 可以拖动下方滑块**缩放**查看细节
-
-#### 页面2：模型预测
-- 顶部勾选要对比的**模型**（默认全选）
-- 上方图表：观测值（黑线）vs 各模型预测值（彩色虚线）
-- 下方图表：残差图（预测误差）
-- 底部表格：各模型的评估指标
-
-#### 页面3：异常检测
-- 调整**阈值分位数**（0.90~0.99），点击"更新"
-- 上方图表：异常得分时序，红色点是异常点，黄色虚线是阈值
-- 中间表格：异常事件列表
-- 下方图表：不同分位数下的异常点数量
+> `start_web.bat` 会优先使用项目 `.venv`，否则用 `PATH` 里的 `python`；本机若长期用外部 venv，可自行改 bat 或直接命令行启动。
 
 ---
 
-## 四、常见问题
+## 页面说明
 
-### Q1: 启动报错 `ModuleNotFoundError: No module named 'uvicorn'`
+### 1. 数据概览 `/`
+选择台站/测项，看水氡等时序曲线与缺测统计。
 
-需要安装依赖：
-```bash
-pip install fastapi uvicorn -i https://pypi.org/simple/
-```
+### 2. 模型预测 `/prediction`
+- 默认 **v6.1 主结果**（65/35）：观测 + E_cosine ★，可勾选 Naive / RF / LSTM-RF / CNN-LSTM 对比
+- 预测已**反变换到原始水氡 Bq/L**，避免 Z-score 与 Robust 尺度混画
+- 滚轮缩放后线条自动加粗；工具栏可框选缩放/重置/存图
+- 下方有整体指标表 + **按年 R²**（整体 R² 须结合分年阅读）
+- 可切换 **v6.0 多变量对照**（80/20）
 
-### Q2: 图表不显示 / 数据为空
+### 3. 异常检测 `/anomaly`
+E_cosine 残差 LOF：得分时序、5 个异常事件、气象归因、后续 M4+/M5+、阈值敏感性。
 
-检查数据文件是否存在：
-```
-D:\MYCODE\dachuang_cnn_lstm\data\clean\long.csv
-D:\MYCODE\dachuang_cnn_lstm\results\phase2_baselines\*
-D:\MYCODE\dachuang_cnn_lstm\results\smoke\*
-```
-
-### Q3: 想换端口
-
-修改 `app.py` 最后一行：
-```python
-uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-# 把 8000 改成你想要的端口
-```
-
-### Q4: 想在其他电脑上用
-
-把整个 `web/` 文件夹拷贝过去，确保目标电脑有 Python 环境，然后：
-```bash
-pip install fastapi uvicorn
-cd web
-python app.py
-```
+### 4. 震例验证 `/earthquake`
+六个关键地震对应表、LOF 事件→后续地震、残差时间轴。
 
 ---
 
-## 五、技术细节（可跳过）
+## 常见问题
 
-### 目录结构
+**Q: 端口 8002 被占用？**  
+说明服务已在运行，直接打开上面地址即可；或结束占用进程后重启。
+
+**Q: 页面数字还是旧的（如 R²=0.67）？**  
+浏览器缓存。按 `Ctrl+F5` 强制刷新。
+
+**Q: 启动报缺 fastapi / uvicorn？**  
+```bash
+python -m pip install fastapi uvicorn
+# 或
+python -m pip install -r requirements.txt
+```
+
+**Q: 想改端口？**  
+改 `web/start_web.bat` 里的 `set PORT=8002`，以及启动命令中的 `--port`。
+
+---
+
+## 目录结构
 
 ```
 web/
-├── app.py              # FastAPI 入口，启动服务
-├── start_web.bat       # Windows 一键启动脚本
-├── api/                # 后端 API
-│   ├── data.py         # 读取 long.csv，返回台站/时序数据
-│   ├── models.py       # 读取 metrics.json 和 predictions_test.csv
-│   └── anomalies.py    # 读取 events.csv 和 sensitivity_quantile.csv
-└── static/             # 前端页面
-    ├── index.html      # 数据概览页
-    ├── prediction.html # 预测对比页
-    ├── anomaly.html    # 异常检测页
-    ├── css/style.css   # 样式
+├── app.py                 # FastAPI 入口
+├── start_web.bat          # 一键启动（端口 8002）
+├── api/
+│   ├── data.py            # 台站/时序
+│   ├── models.py          # v6.1 预测与指标（反变换到 Bq/L）
+│   ├── anomalies.py       # v6.1 LOF 事件
+│   └── earthquakes.py     # 震例验证
+└── static/
+    ├── index.html         # 数据概览
+    ├── prediction.html    # 模型预测
+    ├── anomaly.html       # 异常检测
+    ├── earthquake.html    # 震例验证
+    ├── css/style.css
     └── js/
-        ├── data.js         # 数据展示逻辑
-        ├── prediction.js   # 预测对比逻辑
-        └── anomaly.js      # 异常检测逻辑
+        ├── data.js
+        ├── prediction.js
+        ├── anomaly.js
+        └── earthquake.js
 ```
 
-### API 端点
+### 主要 API
 
 | 端点 | 说明 |
 |------|------|
 | `GET /api/stations` | 台站列表 |
-| `GET /api/data/{station_id}` | 时序数据 |
-| `GET /api/data/{station_id}/stats` | 数据统计 |
-| `GET /api/models` | 模型列表 |
-| `GET /api/predictions/{model}` | 预测结果 |
-| `GET /api/metrics` | 评估指标 |
-| `GET /api/anomalies/events` | 异常事件 |
-| `GET /api/anomalies/sensitivity` | 敏感性分析 |
+| `GET /api/data/{id}` | 时序 |
+| `GET /api/metrics` | v6.1 各模型指标 + 按年 R² |
+| `GET /api/year_r2` | 按年 R² |
+| `GET /api/predictions/all` | 全模型预测（Bq/L） |
+| `GET /api/predictions/{var}/{window}` | v6.0 多变量对照 |
+| `GET /api/anomalies/summary` | LOF 事件汇总 |
+| `GET /api/anomalies/events` | 异常事件列表 |
+| `GET /api/anomalies/scores` | LOF 得分序列 |
+| `GET /api/earthquakes/verification` | 六地震对应表 |
+| `GET /api/earthquakes/events` | 事件→后续地震 |
 
 ### 技术栈
 
-- **后端**：FastAPI（Python）
-- **前端**：HTML + JavaScript + ECharts 5（CDN加载）
-- **无需**：Node.js、npm、数据库
+- 后端：FastAPI  
+- 前端：HTML + JS + ECharts 5  
+- 无 Node / 数据库

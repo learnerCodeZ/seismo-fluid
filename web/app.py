@@ -2,7 +2,12 @@
 地震流体异常检测可视化平台 - FastAPI 后端
 启动命令: python web/app.py 或 uvicorn web.app:app --reload
 """
+import sys
 from pathlib import Path
+
+WEB_DIR = Path(__file__).resolve().parent
+if str(WEB_DIR) not in sys.path:
+    sys.path.insert(0, str(WEB_DIR))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from api.data import router as data_router
 from api.models import router as models_router
 from api.anomalies import router as anomalies_router
+from api.earthquakes import router as earthquakes_router
 
 app = FastAPI(
     title="地震流体异常检测可视化平台",
@@ -31,6 +37,7 @@ app.add_middleware(
 app.include_router(data_router, prefix="/api", tags=["数据"])
 app.include_router(models_router, prefix="/api", tags=["模型"])
 app.include_router(anomalies_router, prefix="/api", tags=["异常检测"])
+app.include_router(earthquakes_router, prefix="/api", tags=["震例验证"])
 
 # 静态文件
 STATIC_DIR = Path(__file__).parent / "static"
@@ -55,6 +62,12 @@ async def anomaly():
     return STATIC_DIR / "anomaly.html"
 
 
+@app.get("/earthquake", response_class=FileResponse)
+async def earthquake():
+    """震例对应验证页"""
+    return STATIC_DIR / "earthquake.html"
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "地震流体异常检测可视化平台"}
@@ -66,4 +79,4 @@ if __name__ == "__main__":
     print("  地震流体异常检测可视化平台")
     print("  访问地址: http://localhost:8000")
     print("=" * 50)
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=8002, reload=True)

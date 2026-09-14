@@ -11,13 +11,21 @@
     <nav class="navbar">
         <div class="nav-brand">地震流体异常检测可视化平台</div>
         <div class="nav-links">
-            <a href="/" class="active">数据概览</a>
+            <a href="/">数据概览</a>
             <a href="/prediction">模型预测</a>
             <a href="/anomaly">异常检测</a>
+            <a href="/earthquake">震例验证</a>
         </div>
     </nav>
 
     <main class="container">
+        <section class="chart-section" style="margin-bottom:16px">
+            <p class="section-desc" style="margin:0">
+                当前版本 <strong>v6.1</strong>：主模型 E_cosine，训练/测试 65/35（测试自 2022-05-16）。
+                模型对比见「模型预测」，异常与震例见「异常检测」「震例验证」。
+            </p>
+        </section>
+
         <!-- 筛选栏 -->
         <section class="filter-bar">
             <div class="filter-group">

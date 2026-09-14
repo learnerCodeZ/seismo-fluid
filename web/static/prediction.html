@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>模型预测对比 - 地震流体异常检测</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>模型预测对比 - 地震流体异常检测 v6.1</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=611">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
@@ -14,12 +14,20 @@
             <a href="/">数据概览</a>
             <a href="/prediction" class="active">模型预测</a>
             <a href="/anomaly">异常检测</a>
+            <a href="/earthquake">震例验证</a>
         </div>
     </nav>
 
     <main class="container">
         <section class="filter-bar">
             <div class="filter-group">
+                <label>实验模式</label>
+                <select id="modeSelect">
+                    <option value="v61" selected>v6.1 主结果（65/35 · E_cosine）</option>
+                    <option value="multivar">v6.0 多变量对照（80/20）</option>
+                </select>
+            </div>
+            <div class="filter-group" id="multivar-controls" style="display:none">
                 <label>变量组合</label>
                 <select id="varSelect">
                     <option value="radon">水氡（单变量）</option>
@@ -28,7 +36,7 @@
                     <option value="radon_level_weather">水氡+水位+气象（多变量）</option>
                 </select>
             </div>
-            <div class="filter-group">
+            <div class="filter-group" id="multivar-window" style="display:none">
                 <label>滑动窗口</label>
                 <select id="windowSelect">
                     <option value="15">15天</option>
@@ -39,10 +47,20 @@
                     <option value="120">120天</option>
                 </select>
             </div>
-            <div class="filter-group">
-                <label>选择模型</label>
+            <div class="filter-group" id="v61-models">
+                <label>模型（v6.1）</label>
                 <div class="checkbox-group" id="model-checkboxes">
-                    <label><input type="checkbox" value="rf" checked> 随机森林</label>
+                    <label><input type="checkbox" value="naive"> Naive</label>
+                    <label><input type="checkbox" value="rf"> RF</label>
+                    <label><input type="checkbox" value="lstm_rf"> LSTM-RF</label>
+                    <label><input type="checkbox" value="cnn_lstm"> CNN-LSTM</label>
+                    <label><input type="checkbox" value="e_cosine" checked> E_cosine ★</label>
+                </div>
+            </div>
+            <div class="filter-group" id="multivar-models" style="display:none">
+                <label>模型（多变量）</label>
+                <div class="checkbox-group" id="mv-model-checkboxes">
+                    <label><input type="checkbox" value="rf" checked> RF</label>
                     <label><input type="checkbox" value="lstm_rf"> LSTM-RF</label>
                     <label><input type="checkbox" value="cnn_lstm" checked> CNN-LSTM</label>
                 </div>
@@ -50,8 +68,17 @@
         </section>
 
         <section class="chart-section">
-            <h3>预测 vs 观测（标准化值）</h3>
-            <p class="section-desc">* 数据经 z-score 标准化：原始 Bq/L 值转换为均值=0、标准差=1 的无量纲数值。负数表示"低于平均水平"，正数表示"高于平均水平"。多变量模型输入多个特征（如水氡+水位），但输出仍只预测水氡。预测曲线是滑动窗口（60天）逐天预测的结果。详见 Q&A.md</p>
+            <p class="section-desc" id="mode-desc">
+                v6.1：训练 2015~2022-05-15，测试 2022-05-16~2026-05。主模型 E_cosine（9特征+Robust+Huber+Cosine）。
+            </p>
+        </section>
+
+        <section class="chart-section">
+            <h3>预测 vs 观测（水氡 Bq/L，已反标准化）</h3>
+            <p class="section-desc">
+                所有模型统一反变换到原始水氡浓度。E_cosine 训练时用 Robust 标准化，其他模型用 Z-score；
+                若直接画标准化值会因量纲不同而看起来“整体偏移”，那是错觉，不是预测偏差。
+            </p>
             <div id="prediction-chart" style="height: 400px;"></div>
         </section>
 
@@ -61,9 +88,10 @@
         </section>
 
         <section class="chart-section">
-            <h3>评估指标</h3>
+            <h3>评估指标（原始尺度 Bq/L）</h3>
+            <p class="section-desc">RMSE/MAE/MAPE 在水氡原始单位下计算，可跨模型直接比较；R² 与尺度无关。</p>
             <div class="table-container">
-                <table id="metrics-table">
+                <table>
                     <thead>
                         <tr>
                             <th>模型</th>
@@ -77,8 +105,31 @@
                 </table>
             </div>
         </section>
+
+        <section class="chart-section" id="year-r2-section">
+            <h3>按年 R²（v6.1）</h3>
+            <p class="section-desc">
+                整体 R² 被 2023–2024 高方差年抬高；2025–2026 序列几乎持平，R² 失效。论文须分年报。
+            </p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模型</th>
+                            <th>2022</th>
+                            <th>2023</th>
+                            <th>2024</th>
+                            <th>2025</th>
+                            <th>2026</th>
+                        </tr>
+                    </thead>
+                    <tbody id="year-r2-body"></tbody>
+                </table>
+            </div>
+            <div id="year-r2-chart" style="height: 320px; margin-top: 16px;"></div>
+        </section>
     </main>
 
-    <script src="/static/js/prediction.js"></script>
+    <script src="/static/js/prediction.js?v=612"></script>
 </body>
 </html>
