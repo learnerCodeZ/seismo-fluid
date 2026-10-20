@@ -1,4 +1,7 @@
-"""anomaly/events.py — 异常点聚合成事件 + 多参数重合统计（对齐文献"事件组"口径）。"""
+"""anomaly/events.py — 异常点聚合成事件 + 多参数重合统计（对齐文献"事件组"口径）。
+
+迁移自 dachuang_cnn_lstm/src/anomaly/events.py，逐行一致。
+"""
 from __future__ import annotations
 
 import numpy as np

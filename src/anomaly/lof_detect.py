@@ -1,5 +1,7 @@
 """anomaly/lof_detect.py — 残差 LOF 异常检测（方法对齐参照文献）。
 
+迁移自 dachuang_cnn_lstm/src/anomaly/lof_detect.py，逐行一致。
+
 核心逻辑：最优模型的训练段残差应为白噪声；把训练段残差特征作为 LOF 的
 "正常密度参照"（novelty=True），对全序列（重点是测试段）打分，
 得分超过高分位数阈值者判为候选异常点。
@@ -33,6 +35,25 @@ def lof_scores(ref_x: np.ndarray, score_x: np.ndarray, k: int) -> np.ndarray:
     lof = LocalOutlierFactor(n_neighbors=min(k, len(ref_x) - 1), novelty=True)
     lof.fit(np.asarray(ref_x, float))
     return -lof.score_samples(np.asarray(score_x, float))  # sklearn: 越小越异常 → 取负
+
+
+def blocked_self_reference_scores(x: np.ndarray, k: int, block_size: int = 30,
+                                  embargo: int = 6) -> np.ndarray:
+    """测试残差自参照；连续留出块及相邻重叠窗口不参与该块的 LOF 拟合。"""
+    x = np.asarray(x, dtype=float)
+    if x.ndim != 2 or not np.isfinite(x).all():
+        raise ValueError("LOF 特征必须是无 NaN 的二维矩阵")
+    if k < 2 or block_size < 1 or embargo < 0:
+        raise ValueError("无效的 LOF 分块参数")
+    scores = np.empty(len(x), dtype=float)
+    for start in range(0, len(x), block_size):
+        end = min(start + block_size, len(x))
+        reference = np.concatenate((x[:max(0, start - embargo)],
+                                    x[min(len(x), end + embargo):]))
+        if len(reference) <= k:
+            raise ValueError("留出块外的参照样本不足")
+        scores[start:end] = lof_scores(reference, x[start:end], k)
+    return scores
 
 
 def detect(scores: np.ndarray, quantile: float = 0.987) -> tuple[np.ndarray, float]:

@@ -1,5 +1,7 @@
 """features/build.py — 滑窗构造与标准化。
 
+迁移自 dachuang_cnn_lstm/src/features/build.py，逐行一致。
+
 设计要点（防时序泄漏）：
 - 标准化统计量只从训练段估计，应用到测试段；
 - 滑窗窗口 window=60、步长 1（与参照文献一致），均由配置传入。

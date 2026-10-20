@@ -1,43 +1,10 @@
-# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
 .venv/
-venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Data (too large, keep only clean/)
-data/raw/
-data/external/
-
-# Results (too large, regenerate with scripts)
-# keep the index README for collaborators
-results/*
-!results/README.md
-
-# Handoff packages (scripts/package_handoff.ps1)
-handoff/
-
-# Models
-*.h5
+local/
+data/
+reference/
+results/
+figures/
+figures1011.zip
 *.pt
-*.pth
-*.pkl
-
-# Logs
-*.log
-
-# Byte-compiled
-*.pyc

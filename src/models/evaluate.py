@@ -1,5 +1,7 @@
 """models/evaluate.py — 评估指标与结果落盘。
 
+迁移自 dachuang_cnn_lstm/src/models/evaluate.py，逐行一致。
+
 指标与参照文献公式一致：RMSE / MAE / MAPE / R²。
 每次实验落盘 results/<exp>/：metrics.json + predictions.csv。
 """
